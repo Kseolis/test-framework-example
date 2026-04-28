@@ -7,13 +7,10 @@
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://www.conventionalcommits.org/en/v1.0.0/)
 
 **SonarCloud badges**
-
-```md
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Kseolis_free-vpn-planet-test&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Kseolis_free-vpn-planet-test)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Kseolis_free-vpn-planet-test&metric=bugs)](https://sonarcloud.io/summary/new_code?id=Kseolis_free-vpn-planet-test)
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=Kseolis_free-vpn-planet-test&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=Kseolis_free-vpn-planet-test)
 [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=Kseolis_free-vpn-planet-test&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=Kseolis_free-vpn-planet-test)
-```
 
 ---
 
