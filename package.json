@@ -1,33 +1,59 @@
 {
-  "name": "free-vpn-planet-test",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {},
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "name": "sdet-playwright-project",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TypeScript + Playwright SDET project scaffolded with the SDET Claude Code kit.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20.10.0",
+    "npm": ">=10.0.0"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:api": "playwright test --project=api",
+    "test:ui": "playwright test --ui",
+    "test:debug": "PWDEBUG=1 playwright test",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report",
+    "spec:gen": "openapi-typescript specs/openapi.yaml -o tests/api/generated/schema.d.ts",
+    "spec:lint": "redocly lint specs/openapi.yaml",
+    "spec:sync": "npm run spec:lint && npm run spec:gen",
+    "lint": "eslint ",
+    "lint:fix": "eslint  --fix",
+    "format": "prettier --write \"**/*.{ts,js,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,js,json,md,yml,yaml}\"",
+    "typecheck": "tsc --noEmit",
+    "verify": "bash scripts/verify.sh || true",
+    "prepare": "husky || true"
+  },
   "lint-staged": {
-    "*.{ts,js}": [
+    "*.ts": [
       "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{js,json,md,yml,yaml}": [
       "prettier --write"
     ]
   },
   "devDependencies": {
-    "@playwright/test": "^1.59.1",
-    "@types/node": "^25.6.0",
-    "@typescript-eslint/eslint-plugin": "^8.59.1",
-    "@typescript-eslint/parser": "^8.59.1",
-    "dotenv": "^17.4.2",
-    "eslint": "^10.2.1",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-playwright": "^2.10.2",
-    "eslint-plugin-prettier": "^5.5.5",
-    "husky": "^9.1.7",
-    "jiti": "^2.6.1",
-    "lint-staged": "^16.4.0",
-    "prettier": "^3.8.3",
-    "typescript": "^5.9.3"
+    "@faker-js/faker": "^9.0.0",
+    "@playwright/test": "^1.50.0",
+    "@redocly/cli": "^1.25.0",
+    "@types/node": "^22.0.0",
+    "dotenv": "^16.4.0",
+    "eslint": "^9.0.0",
+    "fishery": "^2.2.2",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
+    "openapi-fetch": "^0.13.0",
+    "openapi-typescript": "^7.0.0",
+    "prettier": "^3.3.0",
+    "tsc-files": "^1.1.4",
+    "tsx": "^4.0.0",
+    "typescript": "^5.4.0",
+    "typescript-eslint": "^8.0.0",
+    "zod": "^3.23.0"
   }
 }

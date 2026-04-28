@@ -1,0 +1,48 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023", "DOM"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
+    "types": ["node", "@playwright/test"],
+    "baseUrl": "./",
+    "paths": {
+      "@pages/*":      ["tests/pages/*"],
+      "@components/*": ["tests/components/*"],
+      "@api/*":        ["tests/api/*"],
+      "@fixtures":     ["tests/fixtures/index.ts"],
+      "@fixtures/*":   ["tests/fixtures/*"],
+      "@factories/*":  ["tests/factories/*"],
+      "@infra/*":      ["tests/infra/*"],
+      "@data/*":       ["tests/data/*"]
+    },
+    "noEmit": true,
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo"
+  },
+  "include": [
+    "tests/**/*.ts",
+    "playwright.config.ts",
+    "*.config.ts",
+    "*.config.mjs"
+  ],
+  "exclude": [
+    "node_modules",
+    "playwright-report",
+    "test-results",
+    "dist"
+  ]
+}

@@ -1,10 +1,36 @@
-
-# Playwright
+# Node
 node_modules/
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-/playwright/.auth/
+.pnpm-store/
+npm-debug.log*
 
-/.idea/
+# Env / secrets — never commit
+.env
+.env.local
+.env.*.local
+.env.development
+.env.staging
+.env.production
+# allowed:
+!.env.example
+!.env.*.template
+
+# Playwright outputs
+playwright-report/
+test-results/
+.last-run.json
+runs/
+
+# Auth state (storageState)
+tests/.auth/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+.claude
+/CLAUDE.md
+.

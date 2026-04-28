@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh" 2>/dev/null || true
+
+# Enforce Conventional Commits with a relaxed regex.
+# Allowed types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert.
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(head -1 "$COMMIT_MSG_FILE")
+
+# Allow merge commits, reverts, fixups
+case "$COMMIT_MSG" in
+  Merge*|Revert*|fixup!*|squash!*) exit 0 ;;
+esac
+
+PATTERN='^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\([a-z0-9_-]+\))?!?: .{1,100}$'
+
+if ! echo "$COMMIT_MSG" | grep -qE "$PATTERN"; then
+  echo "✗ Commit message does not match Conventional Commits format."
+  echo "  Expected: type(scope?): subject"
+  echo "  Example:  test(checkout): add cancel-order scenario"
+  echo
+  echo "Got: $COMMIT_MSG"
+  exit 1
+fi

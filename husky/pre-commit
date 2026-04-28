@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh" 2>/dev/null || true
+
+# 1. lint-staged: prettier + eslint --fix on staged files
+npx --no-install lint-staged || exit 1
+
+# 2. SDET reviewer: scan staged tests for blockers (hard waits, raw fetch, etc.)
+if [ -d ".claude/skills/playwright-test-author-ui/scripts" ] && [ -x "$(command -v npx)" ]; then
+  if [ -f "tests-config.json" ]; then
+    npx --no-install tsx .claude/skills/playwright-test-author-ui/scripts/lint-ui-spec.ts --staged || exit 1
+  fi
+fi
+
+# 3. Hardcoded secrets/URLs scan
+if [ -x ".claude/skills/config-and-secrets/scripts/scan-hardcoded.sh" ]; then
+  bash .claude/skills/config-and-secrets/scripts/scan-hardcoded.sh || exit 1
+fi
