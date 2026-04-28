@@ -23,6 +23,22 @@ export class SignupPage extends BasePage {
     return this.page.getByLabel('Email');
   }
 
+  /**
+   * Fill the email field with full reactivity: PrimeVue's lazy validator only
+   * enables the Next + payment-method buttons after `input`, `change`, AND
+   * `blur` events fire. Playwright's native `.fill()` / `.pressSequentially()`
+   * does not reliably dispatch `change` in headless mode, so we set the value
+   * and fire the events programmatically.
+   */
+  async fillEmail(value: string): Promise<void> {
+    await this.emailInput().evaluate((el: HTMLInputElement, v: string) => {
+      el.value = v;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      el.dispatchEvent(new Event('blur', { bubbles: true }));
+    }, value);
+  }
+
   nextButton(): Locator {
     return this.page.getByRole('button', { name: 'Next' });
   }
@@ -51,6 +67,14 @@ export class SignupPage extends BasePage {
 
   termsCheckbox(): Locator {
     return this.page.locator('#payment-checkbox');
+  }
+
+  /** Visually-hidden native checkbox; toggle via change event. */
+  async acceptTerms(): Promise<void> {
+    await this.termsCheckbox().evaluate((el: HTMLInputElement) => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
   }
 
   getSubscriptionButton(): Locator {

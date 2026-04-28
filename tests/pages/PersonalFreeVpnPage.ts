@@ -21,7 +21,13 @@ export class PersonalFreeVpnPage extends BasePage {
   }
 
   async selectOffer(offer: PersonalOffer): Promise<void> {
-    await this.offerRadio(offer).check();
+    // Native radio is visually hidden AND positioned outside the layout
+    // viewport behind a custom card. Set `checked` programmatically and fire
+    // a `change` event so any JS state updates propagate.
+    await this.offerRadio(offer).evaluate((el: HTMLInputElement) => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
   }
 
   emailInput(): Locator {

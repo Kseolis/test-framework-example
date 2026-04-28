@@ -36,12 +36,46 @@ export class PaymentMethodsPage extends BasePage {
   }
 
   async selectGateway(value: Gateway): Promise<void> {
-    await this.gatewayRadio(value).check();
+    // Native radio is visually hidden behind a custom label; set checked + change event programmatically.
+    await this.gatewayRadio(value).evaluate((el: HTMLInputElement) => {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
   }
 
   /** EN-only: button that opens the cryptocurrency picker (Site C). */
   cryptoPickerButton(): Locator {
     return this.page.locator('.js-select-payment-btn');
+  }
+
+  /** EN-only: a specific cryptocurrency option inside the picker dropdown. */
+  cryptoOption(coinId: string): Locator {
+    return this.page.locator(`.js-payment-item[data-id="${coinId}"]`);
+  }
+
+  /** EN-only: open the picker and select the given crypto by data-id (e.g. 'BTC'). */
+  async selectCrypto(coinId: string): Promise<void> {
+    await this.cryptoPickerButton().click();
+    await this.cryptoOption(coinId).click();
+  }
+
+  /** Both Sites B and C show a "By clicking this button you agree..." checkbox. */
+  termsCheckbox(): Locator {
+    return this.page
+      .getByRole('checkbox', { name: /agree to the (terms|политики)|terms of use|refund/i })
+      .first();
+  }
+
+  /** Idempotently accept any payment-page terms checkbox; safe to call when none is present. */
+  async acceptTerms(): Promise<void> {
+    await this.page.evaluate(() => {
+      document.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach((cb) => {
+        if (!cb.checked) {
+          cb.checked = true;
+          cb.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+    });
   }
 
   submitButton(): Locator {
