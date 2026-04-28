@@ -19,8 +19,8 @@ export interface UserTransient {
 const slug = (s: string) =>
   s
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '.')
-    .replace(/(^\.|\.$)/g, '');
+    .replaceAll(/[^a-z0-9]+/g, '.')
+    .replaceAll(/(^\.|\.$)/g, '');
 
 export const userFactory = Factory.define<User, UserTransient>(({ sequence, transientParams }) => {
   const firstName = faker.person.firstName();

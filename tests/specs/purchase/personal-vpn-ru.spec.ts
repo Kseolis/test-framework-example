@@ -9,9 +9,9 @@ const PLANETCONFIG_ORIGIN = 'https://planetconfig.com';
  * card_ru | 1Payment?i=4 | sber | yoomoney | stripe.
  *
  * The assignment requires testing crypto on this site, but no crypto
- * gateway was found at the time of inspection. See docs/ux-findings.md.
- * We exercise two distinct methods (RU bank cards + international Stripe)
- * and explicitly mark the crypto path as fixme.
+ * gateway was exposed at the time of inspection (see docs/ux-findings.md).
+ * We exercise two distinct methods — RU bank cards + international Stripe —
+ * and surface the crypto gap via Playwright's deferred-test mechanism below.
  */
 const GATEWAYS_TO_TEST: readonly Gateway[] = ['card_ru', 'stripe'] as const;
 

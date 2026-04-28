@@ -8,12 +8,39 @@ set -uo pipefail
 green='\033[0;32m'; yellow='\033[0;33m'; red='\033[0;31m'; nc='\033[0m'
 fails=0; warns=0
 
-ok()   { printf "  ${green}✓${nc} %s\n" "$1"; }
-warn() { printf "  ${yellow}!${nc} %s\n" "$1"; warns=$((warns+1)); }
-fail() { printf "  ${red}✗${nc} %s\n" "$1"; fails=$((fails+1)); }
+ok() {
+  local label="$1"
+  printf "  ${green}✓${nc} %s\n" "$label"
+  return 0
+}
 
-check() { local label="$1" cond="$2"; eval "$cond" && ok "$label" || fail "$label"; }
-softcheck() { local label="$1" cond="$2"; eval "$cond" && ok "$label" || warn "$label"; }
+warn() {
+  local label="$1"
+  printf "  ${yellow}!${nc} %s\n" "$label"
+  warns=$((warns + 1))
+  return 0
+}
+
+fail() {
+  local label="$1"
+  printf "  ${red}✗${nc} %s\n" "$label"
+  fails=$((fails + 1))
+  return 0
+}
+
+check() {
+  local label="$1"
+  local cond="$2"
+  if eval "$cond"; then ok "$label"; else fail "$label"; fi
+  return 0
+}
+
+softcheck() {
+  local label="$1"
+  local cond="$2"
+  if eval "$cond"; then ok "$label"; else warn "$label"; fi
+  return 0
+}
 
 echo "===  SDET greenfield repo health check"
 echo
