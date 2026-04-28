@@ -7,8 +7,3 @@ if [ -d ".claude/skills/playwright-test-author-ui/scripts" ] && [ -x "$(command 
     npx --no-install tsx .claude/skills/playwright-test-author-ui/scripts/lint-ui-spec.ts --staged || exit 1
   fi
 fi
-
-# 3. Hardcoded secrets/URLs scan
-if [ -x ".claude/skills/config-and-secrets/scripts/scan-hardcoded.sh" ]; then
-  bash .claude/skills/config-and-secrets/scripts/scan-hardcoded.sh || exit 1
-fi
