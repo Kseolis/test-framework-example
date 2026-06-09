@@ -268,11 +268,12 @@ BASE_URL_FREEVPN          default https://freevpnplanet.com/
 BASE_URL_ACCOUNT          default https://account.freevpnplanet.com/
 BASE_URL_PERSONAL         default https://personal.freevpnplanet.com/
 BASE_URL_PLANETCONFIG     default https://planetconfig.com/
-SEED                      default 1234   (Faker determinism)
-CI                        optional       (set by GitHub Actions; gates workers + forbidOnly)
+SEED                      default 1234         (Faker determinism)
+SYNTHETIC_EMAIL_DOMAIN    default yopmail.com  (disposable mail w/ valid MX; CONSTRAINTS §2.4)
+CI                        optional             (set by GitHub Actions; gates workers + forbidOnly)
 ```
 
-`SYNTHETIC_EMAIL_DOMAIN` (default `yopmail.com`, see [`docs/CONSTRAINTS.md`](docs/CONSTRAINTS.md) §2.4) is **not** part of the zod schema above — it is read directly via `process.env` in [`tests/factories/_seed.ts`](tests/factories/_seed.ts), because it belongs to the data layer rather than to global env wiring. Override it when a target site requires a different disposable-mail domain.
+Every env var is validated by the zod schema, so a bad value fails fast at import. The factory seed module [`tests/factories/_seed.ts`](tests/factories/_seed.ts) consumes `env.SYNTHETIC_EMAIL_DOMAIN` rather than reading `process.env` directly — honouring the project's "no inline `process.env`" rule. Override it (via `.env.local` or a CI secret) when a target site requires a different disposable-mail domain.
 
 ### `tsconfig.json` path aliases
 

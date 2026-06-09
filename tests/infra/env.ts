@@ -15,6 +15,10 @@ const schema = z.object({
   BASE_URL_PERSONAL: z.string().url().default('https://personal.freevpnplanet.com/'),
   BASE_URL_PLANETCONFIG: z.string().url().default('https://planetconfig.com/'),
   SEED: z.coerce.number().int().nonnegative().default(1234),
+  // Synthetic-only email domain for factories. Default yopmail.com — disposable
+  // with valid MX, so the RU/EN sites' server-side validation accepts it.
+  // See docs/CONSTRAINTS.md §2.4.
+  SYNTHETIC_EMAIL_DOMAIN: z.string().min(1).default('yopmail.com'),
   CI: z.string().optional(),
 });
 

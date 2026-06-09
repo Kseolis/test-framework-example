@@ -12,7 +12,7 @@ Read [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) once before your first contr
 make install        # npm ci + playwright install --with-deps (3 browsers)
 ```
 
-No `.env.local` is required — [`tests/infra/env.ts`](tests/infra/env.ts) ships safe defaults (the public production URLs + `SEED=1234`). Create `.env.local` only to target alternate hosts or override `SYNTHETIC_EMAIL_DOMAIN` (read in [`tests/factories/_seed.ts`](tests/factories/_seed.ts), default `yopmail.com`).
+No `.env.local` is required — [`tests/infra/env.ts`](tests/infra/env.ts) ships safe defaults (the public production URLs, `SEED=1234`, and `SYNTHETIC_EMAIL_DOMAIN=yopmail.com`). Create `.env.local` only to target alternate hosts or override one of those validated vars.
 
 ---
 

@@ -1,11 +1,12 @@
 import { faker } from '@faker-js/faker';
+import { env } from '@infra/env';
 
 /**
  * Determinism contract — see docs/CONSTRAINTS.md §2.4.
- * Default SEED=1234. Seed is applied once at import time.
- * Import this module at the top of every *.factory.ts file.
+ * Default SEED=1234 (validated in tests/infra/env.ts). Applied once at import
+ * time. Import this module at the top of every *.factory.ts file.
  */
-const seed = process.env.SEED ? Number(process.env.SEED) : 1234;
+const seed = env.SEED;
 faker.seed(seed);
 
 export const FAKER_SEED = seed;
@@ -19,6 +20,6 @@ export const FAKER_SEED = seed;
  * domains by routing the order to `/payment/failed/`. See docs/ux-findings.md
  * (B-payment-validation) and docs/CONSTRAINTS.md §2.4.
  *
- * Override with the SYNTHETIC_EMAIL_DOMAIN env var if needed.
+ * Sourced from the validated env loader (override via SYNTHETIC_EMAIL_DOMAIN).
  */
-export const SYNTHETIC_EMAIL_DOMAIN = process.env.SYNTHETIC_EMAIL_DOMAIN ?? 'yopmail.com';
+export const SYNTHETIC_EMAIL_DOMAIN = env.SYNTHETIC_EMAIL_DOMAIN;
