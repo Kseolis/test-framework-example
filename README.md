@@ -217,6 +217,8 @@ Without Make, the equivalent `npx playwright test ...` commands are documented i
 | **C** EN `1_year × stripe`                                                           | `tests/specs/purchase/personal-vpn-en.spec.ts:15` | chromium, firefox, webkit | `@en`                                                                             |
 | **C** EN `1_year × crypto` (BTC)                                                     | `tests/specs/purchase/personal-vpn-en.spec.ts:15` | chromium, firefox, webkit | `@en`                                                                             |
 
+> Rows that share a spec line (B → `:20`, C → `:15`) are parametrised — one data-driven `test()` inside a `for` loop, not copy-paste.
+
 ---
 
 ## Benchmarks (latest local run)
