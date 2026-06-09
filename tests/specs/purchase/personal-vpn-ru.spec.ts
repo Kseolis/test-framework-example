@@ -47,6 +47,7 @@ test.describe('@ru Personal VPN purchase — RU (Scenario B)', () => {
     });
   }
 
+  // eslint-disable-next-line playwright/expect-expect -- deliberate unimplemented gap; body is intentionally empty
   test.fixme('@ru crypto gateway not exposed on planetconfig.com /payment/ — see docs/ux-findings.md', async () => {
     // Intentionally empty — surfaced as a known gap against the assignment.
   });
