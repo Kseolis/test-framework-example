@@ -78,7 +78,7 @@ The same validators that gate this repo ([`tools/`](tools/)) ship inside the ski
 
 What's intentionally **not** used:
 
-- No OpenAPI / contract testing — we test third-party sites we don't own (CONSTRAINTS §2.1).
+- No OpenAPI / contract testing — we test third-party sites we don't own (CONSTRAINTS §2.1). The `openapi-typescript` / `openapi-fetch` / `@redocly/cli` dev-deps stay installed only so the `.claude/` kit's contract-testing skills remain runnable in repos that _do_ own a spec; this project never invokes them.
 - No mocking — these are real browser sessions against real production sites.
 - No Sentry or telemetry — the SUT is not ours (CONSTRAINTS §2.2).
 
@@ -225,7 +225,7 @@ Without Make, the equivalent `npx playwright test ...` commands are documented i
 | --------------------------- | -------------------------------------------------------------------------------------------- |
 | Spec files                  | **3**                                                                                        |
 | Test cases                  | **30** (10 unique × 3 browsers)                                                              |
-| Lines of TypeScript / shell | **1 269** (factories + pages + specs + fixtures + tools)                                     |
+| Lines of TypeScript / shell | **1 073** (factories + pages + specs + fixtures + tools)                                     |
 | Cross-browser run duration  | **6.8 min** (workers=1, retries=2, video on failure)                                         |
 | Pass-rate (after retries)   | **100%** of executed (24 passed + 3 flaky-but-eventually-passed)                             |
 | Fixme rate (known gaps)     | **3 / 30 = 10%** (Scenario B crypto, see `docs/ux-findings.md` B-1)                          |
