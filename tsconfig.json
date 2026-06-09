@@ -21,14 +21,11 @@
     "baseUrl": "./",
     "paths": {
       "@pages/*": ["tests/pages/*"],
-      "@components/*": ["tests/components/*"],
-      "@api/*": ["tests/api/*"],
       "@fixtures": ["tests/fixtures/index.ts"],
       "@fixtures/*": ["tests/fixtures/*"],
       "@factories": ["tests/factories/index.ts"],
       "@factories/*": ["tests/factories/*"],
-      "@infra/*": ["tests/infra/*"],
-      "@data/*": ["tests/data/*"]
+      "@infra/*": ["tests/infra/*"]
     },
     "noEmit": true,
     "incremental": true,

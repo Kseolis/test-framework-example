@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# verify.sh — sanity check after init.sh.
+# verify.sh — repo health check (tooling, required files, the .claude kit, no leaked secrets).
 # Reports what is missing and what is good. Exit code 0 = green, 1 = warnings, 2 = failures.
 #
 set -uo pipefail
@@ -42,7 +42,7 @@ softcheck() {
   return 0
 }
 
-echo "===  SDET greenfield repo health check"
+echo "===  Free VPN Planet — repo health check"
 echo
 
 echo "[ Tooling ]"
@@ -66,9 +66,7 @@ check ".claude/skills/ has 15 skills"  "[[ \$(ls .claude/skills 2>/dev/null | wc
 check ".claude/agents/ has subagents"  "[[ \$(ls .claude/agents 2>/dev/null | wc -l) -ge 1 ]]"
 check ".claude/hooks/*.sh executable"  "[[ -x .claude/hooks/guard-bash.sh ]]"
 
-echo "[ Greenfield-specific ]"
-softcheck "OpenAPI skill disabled (recommended on greenfield)" \
-  "node -e 'const c=require(\"./tests-config.json\");process.exit(c.openapi&&c.openapi.enabled===false?0:1)' 2>/dev/null"
+echo "[ Environment ]"
 softcheck "node_modules installed"     "[[ -d node_modules ]]"
 softcheck "Playwright browsers installed" \
   "[[ -d \$(npm config get cache 2>/dev/null)/ms-playwright ]] || ls ~/.cache/ms-playwright 2>/dev/null | grep -q chromium"
