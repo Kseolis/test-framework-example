@@ -47,11 +47,13 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps ${{ matrix.project }}
 
-      - name: Lint and typecheck
+      - name: Lint, typecheck and validate architecture
         if: matrix.project == 'chromium'
         run: |
           npm run lint
           npm run typecheck
+          npm run validate
+          npm run format:check
 
       - name: Run Playwright (${{ matrix.project }})
         env:
