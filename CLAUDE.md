@@ -5,20 +5,20 @@ It must stay short — under 300 lines. All deeper knowledge lives in `.claude/s
 
 ## Stack
 
-- TypeScript + Playwright as the only test framework.
-- OpenAPI (`specs/openapi.yaml`) is the single source of truth for the contract.
-- Test data uses Fishery + Faker; clients use `openapi-typescript` + `openapi-fetch`; runtime validation via `zod`.
+- TypeScript + Playwright as the only test framework. Black-box UI E2E — no backend access.
+- This project has **no OpenAPI spec**: the three sites under test are third-party and not ours, so contract testing is N/A (see `docs/CONSTRAINTS.md` §2.1). The `.claude/` kit _supports_ OpenAPI/contract testing (`api-client-from-openapi`, `playwright-test-author-api`, `/spec-sync`) for repos that own a spec, but those capabilities are disabled here.
+- Test data uses Fishery + Faker (`SEED=1234`); runtime/env validation via `zod`.
 
 ## Layered layout
 
 The repository follows the layout declared in `tests-config.json`. The validators in
-`.claude/skills/*/scripts/` enforce the boundaries. Reverse imports across layers are forbidden.
+`tools/` enforce the boundaries (the `.claude/` kit carries portable copies). Reverse imports
+across layers are forbidden. Five layers only — no `components/`, `api/`, `clients/`, `generated/`, `data/`.
 
 ```
-specs/  ──>  fixtures/  ──>  pages/, components/, factories/, api/clients/
-                       \─>  infra/
-factories/  ──>  api/generated (types only)
-api/clients/  ──>  api/generated, infra/
+specs/  ──>  fixtures/  ──>  pages/, factories/, infra/
+pages/      ──>  infra/
+factories/  ──>  infra/
 ```
 
 ## Skills index (use these for any non-trivial task)
@@ -70,15 +70,16 @@ Analytics:
 
 ## Hooks
 
-`PreToolUse Bash` blocks destructive commands and writes to `tests/api/generated/**` outside the API skill.
-`PostToolUse Edit/Write` runs ESLint --fix and Prettier on touched TS files, plus a typecheck of touched files.
-`Stop` runs the smoke suite. See `.claude/settings.json`.
+`PreToolUse Bash` → `guard-bash.sh` blocks destructive commands (`rm -rf`, `git push --force`, `sudo`, …).
+`PreToolUse Edit|Write` → `guard-paths.sh` blocks writes to `tests/api/generated`, snapshots, and `.env`.
+`PostToolUse Edit|Write` → `typecheck-touched.sh` **typechecks** touched files only. ESLint + Prettier run separately, via `lint-staged` in `.husky/pre-commit` — not in this hook.
+`Stop` echoes a smoke-test reminder. See `.claude/settings.json`.
 
 ## Hard rules (enforced by validators, not just culture)
 
 - Selectors live in page objects. Never inline in specs.
 - No `page.waitForTimeout`. Web-first assertions or `expect.poll`.
-- No `axios`/`fetch` in specs. Use generated typed clients.
+- No `axios`/`fetch` in specs. Drive the UI through page objects.
 - No `process.env.X` inline. Use `tests/infra/env.ts`.
 - Factories never call the network. Side effects live in `seed()`.
 - Fixtures always call `await use(...)` and clean up.
@@ -93,6 +94,6 @@ Analytics:
 ## How to run tests
 
 - Smoke: `npx playwright test --grep '@smoke'`.
-- API only: `npx playwright test --project=api`.
+- By locale: `npx playwright test --grep '@ru'` / `--grep '@en'`.
 - With trace: `npx playwright test --trace=on`.
 - UI Mode: `npx playwright test --ui`.
