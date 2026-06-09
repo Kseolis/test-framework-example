@@ -1,45 +1,37 @@
-import type { Page, Locator } from '@playwright/test';
+import type { Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { env } from '@infra/env';
+import type { Offer, OfferLandingPage } from '@support/purchase-flow';
 
-export type PlanetConfigOffer = '2_days' | '1_month' | '1_year';
-
-/**
- * RU landing page (Scenario B) — env.BASE_URL_PLANETCONFIG.
- * Form #PPG submits via GET to /payment/ with the chosen offer + email.
- * The site exposes intentional `qa-*` IDs as a stable QA contract.
- */
-export class PlanetConfigPage extends BasePage {
+export class PlanetConfigPage extends BasePage implements OfferLandingPage {
   protected readonly url = env.BASE_URL_PLANETCONFIG;
 
-  constructor(page: Page) {
-    super(page);
-  }
-
-  offerRadio(offer: PlanetConfigOffer): Locator {
-    const map: Record<PlanetConfigOffer, string> = {
+  private offerRadio(offer: Offer): Locator {
+    const radioIds: Record<Offer, string> = {
       '2_days': '#qa-radio-offer-2-days',
       '1_month': '#qa-radio-offer-1-month',
       '1_year': '#qa-radio-offer-1-year',
     };
-    return this.page.locator(map[offer]);
+    return this.page.locator(radioIds[offer]);
   }
 
-  async selectOffer(offer: PlanetConfigOffer): Promise<void> {
-    // Native radio is visually hidden AND positioned outside the layout
-    // viewport behind a custom card. Set `checked` programmatically and fire
-    // a `change` event so any JS state updates propagate.
-    await this.offerRadio(offer).evaluate((el: HTMLInputElement) => {
-      el.checked = true;
-      el.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-  }
-
-  emailInput(): Locator {
+  private get emailField(): Locator {
     return this.page.locator('#qa-input-email');
   }
 
-  submitButton(): Locator {
+  private get submitButton(): Locator {
     return this.page.locator('#qa-btn-submit-step1');
+  }
+
+  async selectOffer(offer: Offer): Promise<void> {
+    await this.toggleHiddenControl(this.offerRadio(offer));
+  }
+
+  async fillEmail(email: string): Promise<void> {
+    await this.emailField.fill(email);
+  }
+
+  async submit(): Promise<void> {
+    await this.submitButton.click();
   }
 }

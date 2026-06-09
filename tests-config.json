@@ -4,7 +4,8 @@
     "fixtures": "tests/fixtures",
     "factories": "tests/factories",
     "specs": "tests/specs",
-    "infra": "tests/infra"
+    "infra": "tests/infra",
+    "support": "tests/support"
   },
   "naming": {
     "pageClass": "PascalCase",

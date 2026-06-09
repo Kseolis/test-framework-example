@@ -86,14 +86,16 @@ What's intentionally **not** used:
 
 ## Architecture
 
-The repo is built around a 5-layer convention pinned in [`tests-config.json`](tests-config.json) and mechanically enforced by validators under [`tools/`](tools/). Imports flow one direction only — reverse imports across layers are forbidden. A deeper walkthrough lives in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+The repo is built around a 6-layer convention pinned in [`tests-config.json`](tests-config.json) and mechanically enforced by validators under [`tools/`](tools/). Imports flow one direction only — reverse imports across layers are forbidden. A deeper walkthrough lives in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ```mermaid
 flowchart TD
     specs["specs/<br/>the actual tests"] --> fixtures["fixtures/<br/>mergeTests composition"]
-    fixtures --> pages["pages/<br/>page objects"]
+    specs --> support["support/<br/>purchase flow + boundary oracle"]
+    fixtures --> pages["pages/<br/>verb actions over private locators"]
     fixtures --> factories["factories/<br/>Fishery test data"]
     fixtures --> infra["infra/<br/>env loader + helpers"]
+    pages --> support
     pages --> infra
     factories --> infra
 
@@ -113,14 +115,15 @@ flowchart TD
 
 ### Why layers?
 
-| Layer        | Purpose                                       | Boundary rule                                           |
-| ------------ | --------------------------------------------- | ------------------------------------------------------- |
-| `infra/`     | env loader, low-level helpers                 | imported by anything; imports nothing from above        |
-| `pages/`     | page objects (locator builders + actions)     | no `expect`, no specs imports                           |
-| `factories/` | Fishery test-data factories                   | no network, no `Date.now`, no `Math.random`             |
-| `fixtures/`  | Playwright fixture composition (`mergeTests`) | no business logic                                       |
-| `specs/`     | the actual tests (AAA structure)              | no inline locators, no raw `fetch`, no `waitForTimeout` |
-| `tools/`     | static-analysis validators                    | run as pre-commit checks and in CI                      |
+| Layer        | Purpose                                           | Boundary rule                                           |
+| ------------ | ------------------------------------------------- | ------------------------------------------------------- |
+| `infra/`     | env loader, low-level helpers                     | imported by anything; imports nothing from above        |
+| `support/`   | purchase flow + payment-boundary oracle (pure)    | import concrete page objects; contain `expect`          |
+| `pages/`     | page objects — verb actions over private locators | no `expect`, no specs imports                           |
+| `factories/` | Fishery test-data factories                       | no network, no `Date.now`, no `Math.random`             |
+| `fixtures/`  | Playwright fixture composition (`mergeTests`)     | no business logic                                       |
+| `specs/`     | the actual tests (AAA structure)                  | no inline locators, no raw `fetch`, no `waitForTimeout` |
+| `tools/`     | static-analysis validators                        | run as pre-commit checks and in CI                      |
 
 The validators (`tools/{validate-layout.sh, factory-rules.ts, fixture-rules.ts, lint-ui-spec.ts}`) catch boundary violations at lint time so they don't slip into a PR. See [`tools/README.md`](tools/README.md) for exactly what each one guards.
 
@@ -154,8 +157,9 @@ The validators (`tools/{validate-layout.sh, factory-rules.ts, fixture-rules.ts, 
 │   └── ux-findings.md            # UX & functional defects discovered during automation
 ├── tests/
 │   ├── infra/env.ts              # zod-validated env access
-│   ├── factories/                # user, payment-draft, deterministic seed (_seed.ts)
-│   ├── pages/                    # 7 page objects + BasePage (8 files)
+│   ├── support/                  # payment-boundary oracle + shared purchase flow (pure)
+│   ├── factories/                # user factory + deterministic seed (_seed.ts)
+│   ├── pages/                    # 6 page objects + BasePage (7 files)
 │   ├── fixtures/                 # mergeTests of page-object fixtures
 │   └── specs/
 │       ├── signup/               # Scenario A
@@ -206,16 +210,16 @@ Without Make, the equivalent `npx playwright test ...` commands are documented i
 
 | Sub-scenario                                                                         | Spec                                              | Browsers                  | Notes                                                                             |
 | ------------------------------------------------------------------------------------ | ------------------------------------------------- | ------------------------- | --------------------------------------------------------------------------------- |
-| **A** Sign Up — happy path: Home → Log In → Sign Up → 1 year → Credit Card → payment | `tests/specs/signup/signup-flow.spec.ts:7`        | chromium, firefox, webkit | `@smoke`                                                                          |
-| **A** terms unchecked blocks payment                                                 | `tests/specs/signup/signup-flow.spec.ts:46`       | chromium, firefox, webkit | negative                                                                          |
-| **A** empty email keeps Next disabled                                                | `tests/specs/signup/signup-flow.spec.ts:60`       | chromium, firefox, webkit | negative                                                                          |
-| **B** RU 1 month → `card_ru` (Карты Банков РФ)                                       | `tests/specs/purchase/personal-vpn-ru.spec.ts:20` | chromium, firefox, webkit | `@smoke @ru`                                                                      |
-| **B** RU 1 month → `stripe` (international card)                                     | `tests/specs/purchase/personal-vpn-ru.spec.ts:20` | chromium, firefox, webkit | `@smoke @ru`                                                                      |
-| **B** RU crypto path                                                                 | `tests/specs/purchase/personal-vpn-ru.spec.ts:50` | n/a                       | `test.fixme` — gateway not exposed on `/payment/`. See `docs/ux-findings.md` B-1. |
-| **C** EN `1_month × stripe`                                                          | `tests/specs/purchase/personal-vpn-en.spec.ts:15` | chromium, firefox, webkit | `@en`                                                                             |
-| **C** EN `1_month × crypto` (BTC)                                                    | `tests/specs/purchase/personal-vpn-en.spec.ts:15` | chromium, firefox, webkit | `@en`                                                                             |
-| **C** EN `1_year × stripe`                                                           | `tests/specs/purchase/personal-vpn-en.spec.ts:15` | chromium, firefox, webkit | `@en`                                                                             |
-| **C** EN `1_year × crypto` (BTC)                                                     | `tests/specs/purchase/personal-vpn-en.spec.ts:15` | chromium, firefox, webkit | `@en`                                                                             |
+| **A** Sign Up — happy path: Home → Log In → Sign Up → 1 year → Credit Card → payment | `tests/specs/signup/signup-flow.spec.ts:8`        | chromium, firefox, webkit | `@smoke`                                                                          |
+| **A** terms unchecked blocks payment                                                 | `tests/specs/signup/signup-flow.spec.ts:36`       | chromium, firefox, webkit | negative                                                                          |
+| **A** empty email keeps Next disabled                                                | `tests/specs/signup/signup-flow.spec.ts:49`       | chromium, firefox, webkit | negative                                                                          |
+| **B** RU 1 month → `card_ru` (Карты Банков РФ)                                       | `tests/specs/purchase/personal-vpn-ru.spec.ts:11` | chromium, firefox, webkit | `@smoke @ru` (parametrised)                                                       |
+| **B** RU 1 month → `stripe` (international card)                                     | `tests/specs/purchase/personal-vpn-ru.spec.ts:11` | chromium, firefox, webkit | `@smoke @ru` (parametrised)                                                       |
+| **B** RU crypto path                                                                 | `tests/specs/purchase/personal-vpn-ru.spec.ts:35` | n/a                       | `test.fixme` — gateway not exposed on `/payment/`. See `docs/ux-findings.md` B-1. |
+| **C** EN `1_month × stripe`                                                          | `tests/specs/purchase/personal-vpn-en.spec.ts:13` | chromium, firefox, webkit | `@en` (parametrised)                                                              |
+| **C** EN `1_month × crypto` (BTC)                                                    | `tests/specs/purchase/personal-vpn-en.spec.ts:13` | chromium, firefox, webkit | `@en` (parametrised)                                                              |
+| **C** EN `1_year × stripe`                                                           | `tests/specs/purchase/personal-vpn-en.spec.ts:13` | chromium, firefox, webkit | `@en` (parametrised)                                                              |
+| **C** EN `1_year × crypto` (BTC)                                                     | `tests/specs/purchase/personal-vpn-en.spec.ts:13` | chromium, firefox, webkit | `@en` (parametrised)                                                              |
 
 > Rows that share a spec line (B → `:20`, C → `:15`) are parametrised — one data-driven `test()` inside a `for` loop, not copy-paste.
 
@@ -227,7 +231,7 @@ Without Make, the equivalent `npx playwright test ...` commands are documented i
 | --------------------------- | -------------------------------------------------------------------------------------------- |
 | Spec files                  | **3**                                                                                        |
 | Test cases                  | **30** (10 unique × 3 browsers)                                                              |
-| Lines of TypeScript / shell | **1 073** (factories + pages + specs + fixtures + tools)                                     |
+| Lines of TypeScript / shell | **877** (factories + pages + specs + fixtures + support + tools)                             |
 | Cross-browser run duration  | **6.8 min** (workers=1, retries=2, video on failure)                                         |
 | Pass-rate (after retries)   | **100%** of executed (24 passed + 3 flaky-but-eventually-passed)                             |
 | Fixme rate (known gaps)     | **3 / 30 = 10%** (Scenario B crypto, see `docs/ux-findings.md` B-1)                          |

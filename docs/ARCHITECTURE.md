@@ -6,35 +6,41 @@ It is the deep companion to the short contract in [`../CLAUDE.md`](../CLAUDE.md)
 
 ---
 
-## 1. The 5 layers
+## 1. The 6 layers
 
-The repository is organised into exactly five layers, pinned in [`../tests-config.json`](../tests-config.json). Imports flow in **one direction only**; a reverse import (e.g. a page object importing a spec) is a build failure, not a code-review nit.
+The repository is organised into six layers, pinned in [`../tests-config.json`](../tests-config.json). Imports flow in **one direction only**; a reverse import (e.g. a page object importing a spec) is a build failure, not a code-review nit.
 
 ```mermaid
 flowchart TD
     specs["specs/<br/>AAA tests, tags, assertions"]
     fixtures["fixtures/<br/>mergeTests composition + DI"]
-    pages["pages/<br/>page objects: locators + actions"]
+    pages["pages/<br/>page objects: verb actions"]
     factories["factories/<br/>Fishery + Faker, deterministic"]
+    support["support/<br/>purchase flow + boundary oracle (pure)"]
     infra["infra/<br/>zod env loader, helpers"]
 
     specs --> fixtures
+    specs --> support
     fixtures --> pages
     fixtures --> factories
     fixtures --> infra
+    pages --> support
     pages --> infra
     factories --> infra
 ```
 
-| Layer        | Path              | Responsibility                                       | Must not                                                         |
-| ------------ | ----------------- | ---------------------------------------------------- | ---------------------------------------------------------------- |
-| `infra/`     | `tests/infra`     | zod-validated env access, cross-cutting helpers      | import from any layer above                                      |
-| `pages/`     | `tests/pages`     | locator builders + user actions (`BasePage` + 7 POs) | contain `expect`; import specs                                   |
-| `factories/` | `tests/factories` | type-safe synthetic data via Fishery + Faker         | touch the network, `Date.now`, `Math.random`, top-level mutables |
-| `fixtures/`  | `tests/fixtures`  | compose page objects + factories into injected deps  | hold business logic                                              |
-| `specs/`     | `tests/specs`     | the actual tests — Arrange / Act / Assert            | inline locators, raw `fetch`/`axios`, `waitForTimeout`           |
+| Layer        | Path              | Responsibility                                                                    | Must not                                                         |
+| ------------ | ----------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `infra/`     | `tests/infra`     | zod-validated env access, cross-cutting helpers                                   | import from any layer above                                      |
+| `support/`   | `tests/support`   | pure test orchestration: payment-boundary oracle, purchase flow + page interfaces | import concrete page objects; contain `expect`                   |
+| `pages/`     | `tests/pages`     | verb actions over private locators (`BasePage` + 6 POs)                           | contain `expect`; import specs                                   |
+| `factories/` | `tests/factories` | type-safe synthetic data via Fishery + Faker                                      | touch the network, `Date.now`, `Math.random`, top-level mutables |
+| `fixtures/`  | `tests/fixtures`  | compose page objects + factories into injected deps                               | hold business logic                                              |
+| `specs/`     | `tests/specs`     | the actual tests — Arrange / Act / Assert                                         | inline locators, raw `fetch`/`axios`, `waitForTimeout`           |
 
 There is **no** `components/`, `api/`, `clients/`, `generated/`, or `data/` layer. Those were removed during the reorganization; this project is black-box UI E2E with no API contract under our control (see [`CONSTRAINTS.md`](CONSTRAINTS.md) §2.1).
+
+The `support/` layer depends on page objects only through interfaces (`OfferLandingPage`, `PaymentStep`) it declares itself — Dependency Inversion, so `purchaseVpn` is reusable across the RU and EN sites without knowing their concrete classes.
 
 ---
 
@@ -58,14 +64,14 @@ sequenceDiagram
     Spec->>PO: actions (open → login → signup → plan → method)
     PO->>Site: goto / click / programmatic input events
     Site-->>PO: navigation to payment provider boundary
-    Spec->>PO: assert payment URL / DOM oracle (STOP — no Pay)
+    Spec->>Spec: poll reachedPaymentProvider(url) (STOP — no Pay)
 ```
 
 Key invariants visible above:
 
 - **No `baseURL`.** Three origins are in play, so each page object carries an absolute URL derived from `env.BASE_URL_*`. `goto()` is always explicit.
 - **Determinism.** All synthetic data comes from Faker seeded once in [`../tests/factories/_seed.ts`](../tests/factories/_seed.ts) (`SEED=1234`), so the same email/password is produced every run.
-- **The payment boundary is a hard stop.** Specs assert the provider page is reached and never submit card/crypto data ([`CONSTRAINTS.md`](CONSTRAINTS.md) §2.3). `PaymentRedirectPage` is an oracle only — it deliberately has no card-form locators.
+- **The payment boundary is a hard stop.** Specs poll the pure oracle `reachedPaymentProvider(url, origins)` in [`../tests/support/payment-boundary.ts`](../tests/support/payment-boundary.ts) and never submit card/crypto data ([`CONSTRAINTS.md`](CONSTRAINTS.md) §2.3). The oracle has no card-form interaction by construction.
 
 ---
 
@@ -139,3 +145,29 @@ The skills carry portable copies of the same validators (e.g. `.claude/skills/pl
 ### Disabled-by-constraint
 
 For this black-box project, [`CONSTRAINTS.md`](CONSTRAINTS.md) §4 disables the OpenAPI-oriented capabilities (`api-client-from-openapi`, `playwright-test-author-api`, `/spec-sync`, `contract-drift-watch`). They remain committed to demonstrate that the workflow _supports_ contract testing when a repo owns a spec — they are simply switched off here.
+
+---
+
+## 5. Implementation notes (the non-obvious "why")
+
+The test code is comment-free; intent is carried by names. The few facts a name cannot
+convey live here, so the knowledge is not lost.
+
+- **`BasePage.toggleHiddenControl(locator)`** — the offer/gateway radios and the terms
+  checkbox are native inputs that are visually hidden behind custom-styled cards and sit
+  outside the layout viewport. A normal `.check()` can't reach them, so the helper sets
+  `checked` and dispatches a bubbling `change` event to drive the site's JS state.
+- **`BasePage.fillReactively(locator, value)`** — Site A's `/order/` form (PrimeVue) only
+  enables the Next + payment buttons after `input`, `change`, **and** `blur` fire;
+  Playwright's native `.fill()` does not reliably emit `change` headless. The helper
+  dispatches the full event chain.
+- **`SignupPage.fillEmail` waits for the plan toggle first** — that toggle renders only
+  after the Vue form hydrates, so its visibility is a reliable "listeners are attached"
+  marker; without the wait, events fire on an un-hydrated input when arriving from `/login/`.
+- **`reachedPaymentProvider(url, origins)`** — the boundary oracle. Success = navigated off
+  our origins to a provider (or stayed in-house with a `gateway=` invoice param), and the
+  URL is not a `*/failed|error|declined` page. It never inspects card forms.
+- **Known gaps (surfaced as `test.fixme` / omitted on purpose), see [`ux-findings.md`](ux-findings.md):**
+  the RU site exposes no crypto gateway on `/payment/`; Site A's email validator is
+  permissive (accepts addresses with no `@`), so that negative case is documented as a
+  defect rather than asserted as passing.

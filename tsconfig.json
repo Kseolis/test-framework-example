@@ -25,7 +25,8 @@
       "@fixtures/*": ["tests/fixtures/*"],
       "@factories": ["tests/factories/index.ts"],
       "@factories/*": ["tests/factories/*"],
-      "@infra/*": ["tests/infra/*"]
+      "@infra/*": ["tests/infra/*"],
+      "@support/*": ["tests/support/*"]
     },
     "noEmit": true,
     "incremental": true,

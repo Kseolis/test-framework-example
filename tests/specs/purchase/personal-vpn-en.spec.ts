@@ -1,53 +1,37 @@
 import { test, expect } from '@fixtures';
 import { userFactory } from '@factories';
-import type { PaymentMethodsPage } from '@pages/PaymentMethodsPage';
-import type { PersonalOffer } from '@pages/PersonalFreeVpnPage';
+import { purchaseVpn, type Offer, type PaymentMethod } from '@support/purchase-flow';
+import { reachedPaymentProvider, PAYMENT_BOUNDARY_TIMEOUT } from '@support/payment-boundary';
 
-const PERSONAL_ORIGIN = 'https://personal.freevpnplanet.com';
-
-const PLANS: readonly PersonalOffer[] = ['1_month', '1_year'] as const;
-const METHODS = ['stripe', 'crypto'] as const;
-type Method = (typeof METHODS)[number];
+const PERSONAL_ORIGINS = ['https://personal.freevpnplanet.com'];
+const EN_OFFERS: readonly Offer[] = ['1_month', '1_year'];
+const EN_METHODS: readonly PaymentMethod[] = ['stripe', 'crypto'];
 
 test.describe('@en Personal VPN purchase — EN (Scenario C)', () => {
-  for (const offer of PLANS) {
-    for (const method of METHODS) {
-      test(`${offer} × ${method} reaches payment boundary`, async ({
+  for (const offer of EN_OFFERS) {
+    for (const method of EN_METHODS) {
+      test(`@en reaches the payment boundary for ${offer} via ${method}`, async ({
+        page,
         personalFreeVpnPage,
         paymentMethodsPageFor,
-        paymentRedirectPage,
-        page,
       }) => {
         const user = userFactory.build();
 
-        // Arrange + Act — landing form
-        await personalFreeVpnPage.goto();
-        await personalFreeVpnPage.selectOffer(offer);
-        await personalFreeVpnPage.emailInput().fill(user.email);
-        await personalFreeVpnPage.submitButton().click();
+        await purchaseVpn({
+          page,
+          landing: personalFreeVpnPage,
+          payment: paymentMethodsPageFor('personal'),
+          offer,
+          method,
+          email: user.email,
+        });
 
-        // Act — payment-method selection step
-        await expect(page).toHaveURL(/personal\.freevpnplanet\.com\/payment\//);
-        const paymentMethods = paymentMethodsPageFor('personal');
-        await selectMethod(paymentMethods, method);
-        await paymentMethods.acceptTerms();
-        await paymentMethods.submitButton().click();
-
-        // Assert — STOP at payment-provider boundary; never enter card / wallet data
         await expect
-          .poll(() => paymentRedirectPage.hasReachedPaymentBoundary([PERSONAL_ORIGIN]), {
-            timeout: 15_000,
+          .poll(() => reachedPaymentProvider(page.url(), PERSONAL_ORIGINS), {
+            timeout: PAYMENT_BOUNDARY_TIMEOUT,
           })
           .toBe(true);
       });
     }
   }
 });
-
-async function selectMethod(paymentMethods: PaymentMethodsPage, method: Method): Promise<void> {
-  if (method === 'crypto') {
-    await paymentMethods.selectCrypto('BTC');
-  } else {
-    await paymentMethods.selectGateway('stripe');
-  }
-}

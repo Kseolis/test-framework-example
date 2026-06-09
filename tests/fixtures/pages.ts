@@ -5,7 +5,6 @@ import { SignupPage } from '../pages/SignupPage';
 import { PlanetConfigPage } from '../pages/PlanetConfigPage';
 import { PersonalFreeVpnPage } from '../pages/PersonalFreeVpnPage';
 import { PaymentMethodsPage, type PaymentMethodsOrigin } from '../pages/PaymentMethodsPage';
-import { PaymentRedirectPage } from '../pages/PaymentRedirectPage';
 
 type PageFixtures = {
   homePage: HomePage;
@@ -14,7 +13,6 @@ type PageFixtures = {
   planetConfigPage: PlanetConfigPage;
   personalFreeVpnPage: PersonalFreeVpnPage;
   paymentMethodsPageFor: (origin: PaymentMethodsOrigin) => PaymentMethodsPage;
-  paymentRedirectPage: PaymentRedirectPage;
 };
 
 export const pagesTest = base.extend<PageFixtures>({
@@ -35,8 +33,5 @@ export const pagesTest = base.extend<PageFixtures>({
   },
   paymentMethodsPageFor: async ({ page }, use) => {
     await use((origin: PaymentMethodsOrigin) => new PaymentMethodsPage(page, origin));
-  },
-  paymentRedirectPage: async ({ page }, use) => {
-    await use(new PaymentRedirectPage(page));
   },
 });
