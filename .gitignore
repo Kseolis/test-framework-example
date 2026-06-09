@@ -38,3 +38,6 @@ tests/.auth/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local-only study material — never published
+/study/
