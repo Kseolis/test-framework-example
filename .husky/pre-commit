@@ -1,9 +1,9 @@
 # 1. lint-staged: prettier + eslint --fix on staged files
 npx --no-install lint-staged || exit 1
 
-# 2. SDET reviewer: scan staged tests for blockers (hard waits, raw fetch, etc.)
-if [ -d ".claude/skills/playwright-test-author-ui/scripts" ] && [ -x "$(command -v npx)" ]; then
-  if [ -f "tests-config.json" ]; then
-    npx --no-install tsx .claude/skills/playwright-test-author-ui/scripts/lint-ui-spec.ts --staged || exit 1
-  fi
+# 2. SDET gates: enforce the layered architecture + scan specs for anti-patterns
+#    (hard waits, raw fetch, inline page objects, …). See tools/README.md.
+if [ -f "tests-config.json" ] && [ -x "$(command -v npx)" ]; then
+  bash tools/validate-layout.sh || exit 1
+  npx --no-install tsx tools/lint-ui-spec.ts || exit 1
 fi

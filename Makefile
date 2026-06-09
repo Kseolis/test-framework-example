@@ -1,4 +1,4 @@
-.PHONY: default all install test test-smoke test-headed test-debug test-ui test-ru test-en report lint flake-hunt clean help
+.PHONY: default all install test test-smoke test-headed test-debug test-ui test-ru test-en report lint validate verify flake-hunt clean help
 
 default: install lint test ## Install, lint, run tests (the conventional default)
 
@@ -36,6 +36,12 @@ lint: ## Run eslint + tsc + prettier checks
 	npm run lint
 	npm run typecheck
 	npm run format:check
+
+validate: ## Enforce the layered architecture (layout + factory + fixture + spec gates)
+	npm run validate
+
+verify: ## Repo health check (tooling, files, kit, no leaked secrets)
+	npm run verify
 
 flake-hunt: ## Run the suite 5x in a row to surface flaky tests
 	npx playwright test --repeat-each=5

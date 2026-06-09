@@ -1,8 +1,8 @@
 {
-  "name": "sdet-playwright-project",
+  "name": "free-vpn-planet-test",
   "version": "0.1.0",
   "private": true,
-  "description": "TypeScript + Playwright SDET project scaffolded with the SDET Claude Code kit.",
+  "description": "Black-box E2E suite (TypeScript + Playwright) for the Free VPN Planet purchase flows, built with an AI-assisted SDET workflow.",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -12,20 +12,17 @@
   "scripts": {
     "test": "playwright test",
     "test:smoke": "playwright test --grep @smoke",
-    "test:api": "playwright test --project=api",
     "test:ui": "playwright test --ui",
     "test:debug": "PWDEBUG=1 playwright test",
     "test:headed": "playwright test --headed",
     "report": "playwright show-report",
-    "spec:gen": "openapi-typescript specs/openapi.yaml -o tests/api/generated/schema.d.ts",
-    "spec:lint": "redocly lint specs/openapi.yaml",
-    "spec:sync": "npm run spec:lint && npm run spec:gen",
-    "lint": "eslint ",
-    "lint:fix": "eslint  --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,js,json,md,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{ts,js,json,md,yml,yaml}\"",
     "typecheck": "tsc --noEmit",
-    "verify": "bash scripts/verify.sh || true",
+    "validate": "bash tools/validate-layout.sh && tsx tools/factory-rules.ts && tsx tools/fixture-rules.ts && tsx tools/lint-ui-spec.ts",
+    "verify": "bash tools/verify.sh || true",
     "prepare": "husky || true"
   },
   "lint-staged": {

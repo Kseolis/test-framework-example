@@ -1,27 +1,34 @@
-# Node
+# Dependencies
 node_modules/
 .pnpm-store/
 npm-debug.log*
 
-# Env / secrets — never commit
+# Env / secrets — never commit real values
 .env
 .env.local
 .env.*.local
 .env.development
 .env.staging
 .env.production
-# allowed:
+# allowed templates:
 !.env.example
 !.env.*.template
 
-# Playwright outputs
+# Playwright outputs / build artifacts
 playwright-report/
 test-results/
 .last-run.json
 runs/
+.tsbuildinfo
+
+# Playwright MCP debug logs/snapshots
+.playwright-mcp/
 
 # Auth state (storageState)
 tests/.auth/
+
+# Claude Code — the kit IS committed; only personal/local settings are ignored
+.claude/settings.local.json
 
 # IDE
 .vscode/
@@ -31,9 +38,3 @@ tests/.auth/
 # OS
 .DS_Store
 Thumbs.db
-.claude
-/CLAUDE.md
-.
-/.playwright-mcp/
-/.tsbuildinfo
-/docs/

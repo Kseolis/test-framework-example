@@ -31,6 +31,43 @@ The deliverable is graded on **automation craft** (framework design, fixtures, f
 
 ---
 
+## AI-assisted SDET workflow
+
+The single biggest differentiator in this repo is the committed, version-controlled [`.claude/`](.claude/) **AI-assisted SDET kit**. It is not throwaway prompt history — it is a deliberate, reusable engineering asset that turns Claude Code into a disciplined automation pair. Every artefact is checked into git so a reviewer can read exactly how this suite is designed, authored, reviewed, and kept honest.
+
+The kit ships:
+
+- **15 skills** ([`.claude/skills/`](.claude/skills/)) — focused, single-responsibility playbooks: `playwright-framework-bootstrap`, `api-client-from-openapi`, `test-data-factory-builder`, `fixture-architect`, `config-and-secrets`, `requirements-to-test-design`, `gherkin-test-case-author`, `playwright-test-author-ui`, `playwright-test-author-api`, `playwright-debug-conductor`, `test-code-reviewer`, `flaky-triage`, `run-analyzer`, `coverage-gap-analyzer`, `release-report-composer`.
+- **3 subagents** ([`.claude/agents/`](.claude/agents/)) — isolated-context workers: `test-design-agent`, `flaky-detective`, `contract-drift-watch`.
+- **9 slash commands** ([`.claude/commands/`](.claude/commands/)) — one-shot pipelines: `/test-new`, `/test-fix`, `/test-review`, `/spec-sync`, `/flake-hunt`, `/coverage`, `/release-report`, `/factory`, `/page`.
+- **Hooks** ([`.claude/settings.json`](.claude/settings.json)) — guardrails that run mechanically around every agent action:
+  - `PreToolUse Bash` → `guard-bash.sh` blocks destructive commands (`rm -rf`, `git push --force`, `sudo`, …).
+  - `PreToolUse Edit|Write` → `guard-paths.sh` blocks writes to `tests/api/generated`, snapshots, and `.env` files.
+  - `PostToolUse Edit|Write` → `typecheck-touched.sh` **typechecks** touched TS files (formatting + ESLint run separately, via `lint-staged` in the pre-commit hook).
+  - `Stop` → echoes a smoke-test reminder so a run never ends silently.
+
+### The `/test-new` pipeline
+
+`/test-new <feature>` chains the skills into a review-gated authoring flow — requirement in, reviewed test out:
+
+```mermaid
+flowchart LR
+    A["/test-new feature"] --> B["requirements-to-test-design"]
+    B --> C["gherkin-test-case-author"]
+    C --> D["playwright-test-author-ui / -api"]
+    D --> E["test-data-factory-builder"]
+    D --> F["fixture-architect"]
+    E --> G["test-code-reviewer"]
+    F --> G
+    G --> H{"anti-patterns?"}
+    H -- yes --> D
+    H -- no --> I["Reviewed spec, ready to run"]
+```
+
+The same validators that gate this repo ([`tools/`](tools/)) ship inside the skills as portable templates, so the workflow is reusable in any TypeScript + Playwright project — not bespoke to these three sites. For this black-box project the OpenAPI-oriented skills (`api-client-from-openapi`, `playwright-test-author-api`) and `/spec-sync` are deliberately **disabled** by [`docs/CONSTRAINTS.md`](docs/CONSTRAINTS.md) §4; they remain in the kit to demonstrate contract-testing capability for repos that own a spec.
+
+---
+
 ## Why this stack
 
 - **Playwright** for browser automation: trace viewer + video + screenshot artefacts, web-first assertions, parallel workers, native cross-browser (Chromium / Firefox / WebKit).
@@ -41,7 +78,7 @@ The deliverable is graded on **automation craft** (framework design, fixtures, f
 
 What's intentionally **not** used:
 
-- No OpenAPI / contract testing — we test third-party sites we don't own (CONSTRAINTS §2.1).
+- No OpenAPI / contract testing — we test third-party sites we don't own (CONSTRAINTS §2.1). The `openapi-typescript` / `openapi-fetch` / `@redocly/cli` dev-deps stay installed only so the `.claude/` kit's contract-testing skills remain runnable in repos that _do_ own a spec; this project never invokes them.
 - No mocking — these are real browser sessions against real production sites.
 - No Sentry or telemetry — the SUT is not ours (CONSTRAINTS §2.2).
 
@@ -49,13 +86,29 @@ What's intentionally **not** used:
 
 ## Architecture
 
-The repo is built around a layered convention pinned in [`tests-config.json`](tests-config.json) and enforced by validators under `scripts/`. Reverse imports across layers are forbidden:
+The repo is built around a 5-layer convention pinned in [`tests-config.json`](tests-config.json) and mechanically enforced by validators under [`tools/`](tools/). Imports flow one direction only — reverse imports across layers are forbidden. A deeper walkthrough lives in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-```
-specs/  ──>  fixtures/  ──>  pages/, components/, factories/, api/clients/
-                       \─>  infra/
-factories/  ──>  api/generated (types only)
-api/clients/  ──>  api/generated, infra/
+```mermaid
+flowchart TD
+    specs["specs/<br/>the actual tests"] --> fixtures["fixtures/<br/>mergeTests composition"]
+    fixtures --> pages["pages/<br/>page objects"]
+    fixtures --> factories["factories/<br/>Fishery test data"]
+    fixtures --> infra["infra/<br/>env loader + helpers"]
+    pages --> infra
+    factories --> infra
+
+    subgraph gates["tools/ — static-analysis gates"]
+        direction LR
+        v1["validate-layout.sh"]
+        v2["lint-ui-spec.ts"]
+        v3["factory-rules.ts"]
+        v4["fixture-rules.ts"]
+    end
+
+    gates -. enforces import direction .-> specs
+    gates -. enforces purity .-> factories
+    gates -. enforces hygiene .-> fixtures
+    gates -. enforces no-locators .-> pages
 ```
 
 ### Why layers?
@@ -67,9 +120,9 @@ api/clients/  ──>  api/generated, infra/
 | `factories/` | Fishery test-data factories                   | no network, no `Date.now`, no `Math.random`             |
 | `fixtures/`  | Playwright fixture composition (`mergeTests`) | no business logic                                       |
 | `specs/`     | the actual tests (AAA structure)              | no inline locators, no raw `fetch`, no `waitForTimeout` |
-| `scripts/`   | static-analysis validators                    | run as pre-commit checks and in CI                      |
+| `tools/`     | static-analysis validators                    | run as pre-commit checks and in CI                      |
 
-The validators (`scripts/{validate-layout.sh, factory-rules.ts, fixture-rules.ts, lint-ui-spec.ts}`) catch boundary violations at lint time so they don't slip into a PR.
+The validators (`tools/{validate-layout.sh, factory-rules.ts, fixture-rules.ts, lint-ui-spec.ts}`) catch boundary violations at lint time so they don't slip into a PR. See [`tools/README.md`](tools/README.md) for exactly what each one guards.
 
 ### Hard rules (mechanically enforced)
 
@@ -88,30 +141,40 @@ The validators (`scripts/{validate-layout.sh, factory-rules.ts, fixture-rules.ts
 
 ```
 .
+├── .claude/                      # committed AI-assisted SDET kit (the centerpiece)
+│   ├── skills/                   # 15 single-responsibility playbooks
+│   ├── agents/                   # 3 subagents
+│   ├── commands/                 # 9 slash commands
+│   ├── hooks/                    # guard-bash / guard-paths / typecheck-touched
+│   └── settings.json             # hook wiring
 ├── docs/
 │   ├── test-Assignment.pdf       # the PRD
+│   ├── CONSTRAINTS.md            # authoritative project constraints
+│   ├── ARCHITECTURE.md           # layered design + data-flow + gates
 │   └── ux-findings.md            # UX & functional defects discovered during automation
 ├── tests/
 │   ├── infra/env.ts              # zod-validated env access
-│   ├── factories/                # user, payment-draft, deterministic seed
-│   ├── pages/                    # 7 page objects + BasePage
+│   ├── factories/                # user, payment-draft, deterministic seed (_seed.ts)
+│   ├── pages/                    # 7 page objects + BasePage (8 files)
 │   ├── fixtures/                 # mergeTests of page-object fixtures
 │   └── specs/
 │       ├── signup/               # Scenario A
 │       └── purchase/             # Scenarios B and C
-├── scripts/
+├── tools/                        # this repo's wired-in quality gates
 │   ├── validate-layout.sh        # enforce layer rules
 │   ├── factory-rules.ts          # enforce factory purity
 │   ├── fixture-rules.ts          # enforce fixture hygiene
 │   ├── lint-ui-spec.ts           # spec anti-pattern linter
-│   └── ...
-├── .github/workflows/tests.yml   # CI: chromium + firefox + webkit matrix
-├── .husky/                       # pre-commit hooks (lint-staged + spec linter)
+│   ├── verify.sh                 # repo health check
+│   └── README.md                 # what each gate guards
+├── .github/workflows/tests.yml   # CI: chromium + firefox + webkit matrix + Sonar
+├── .husky/                       # pre-commit (lint-staged + validators) + commit-msg
 ├── playwright.config.ts          # 3 browser projects, retries=2, traces, video
 ├── tests-config.json             # canonical layer paths and naming
 ├── tsconfig.json                 # strict TS + path aliases (@pages, @fixtures, ...)
 ├── eslint.config.mjs             # flat config with playwright + TS rules
 ├── Makefile                      # one-command entrypoints (make help)
+├── CONTRIBUTING.md               # how to add a test + troubleshooting
 └── package.json
 ```
 
@@ -130,10 +193,12 @@ make test-ui        # interactive UI Mode
 make report         # open the last HTML report
 make flake-hunt     # rerun the suite 5x to surface flakes
 make lint           # eslint + tsc + prettier
+make validate       # enforce the layered architecture (layout + factory + fixture + spec gates)
+make verify         # repo health check (tooling, files, .claude kit, no leaked secrets)
 make help           # all targets with descriptions
 ```
 
-Without Make, the equivalent `npx playwright test ...` commands are documented in `package.json#scripts`.
+Without Make, the equivalent `npx playwright test ...` commands are documented in `package.json#scripts`. New contributors: see [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to add a test and a troubleshooting guide.
 
 ---
 
@@ -152,6 +217,8 @@ Without Make, the equivalent `npx playwright test ...` commands are documented i
 | **C** EN `1_year × stripe`                                                           | `tests/specs/purchase/personal-vpn-en.spec.ts:15` | chromium, firefox, webkit | `@en`                                                                             |
 | **C** EN `1_year × crypto` (BTC)                                                     | `tests/specs/purchase/personal-vpn-en.spec.ts:15` | chromium, firefox, webkit | `@en`                                                                             |
 
+> Rows that share a spec line (B → `:20`, C → `:15`) are parametrised — one data-driven `test()` inside a `for` loop, not copy-paste.
+
 ---
 
 ## Benchmarks (latest local run)
@@ -160,7 +227,7 @@ Without Make, the equivalent `npx playwright test ...` commands are documented i
 | --------------------------- | -------------------------------------------------------------------------------------------- |
 | Spec files                  | **3**                                                                                        |
 | Test cases                  | **30** (10 unique × 3 browsers)                                                              |
-| Lines of TypeScript / shell | **1 269** (factories + pages + specs + fixtures + scripts)                                   |
+| Lines of TypeScript / shell | **1 073** (factories + pages + specs + fixtures + tools)                                     |
 | Cross-browser run duration  | **6.8 min** (workers=1, retries=2, video on failure)                                         |
 | Pass-rate (after retries)   | **100%** of executed (24 passed + 3 flaky-but-eventually-passed)                             |
 | Fixme rate (known gaps)     | **3 / 30 = 10%** (Scenario B crypto, see `docs/ux-findings.md` B-1)                          |
@@ -168,6 +235,12 @@ Without Make, the equivalent `npx playwright test ...` commands are documented i
 | Validators enforced         | layout + factory + fixture + spec linters; 0 rule violations                                 |
 
 > Benchmark methodology: `make test` against the live production sites at the inspection time (2026-04-28). Numbers reproducible via `make flake-hunt` for stability assessment.
+
+### Running & results — read this before judging a local run
+
+These tests drive **live, third-party production sites** over the public internet; they are inherently flaky (~11% first-attempt flake, documented above, mitigated by `retries: 2`). A local run on your machine may surface flakes from live-site latency or SPA-hydration timing that have nothing to do with the test code.
+
+**CI (GitHub Actions, [`tests.yml`](.github/workflows/tests.yml)) is the authoritative green signal** — it runs the full Chromium/Firefox/WebKit matrix with retries and uploads traces/videos on failure. If you see a local flake, re-run with `make test-headed` / `make test-debug` and consult the [troubleshooting guide in `CONTRIBUTING.md`](CONTRIBUTING.md#troubleshooting) before treating it as a regression. Per [`docs/CONSTRAINTS.md`](docs/CONSTRAINTS.md) §3, a genuine 4xx/5xx is a **finding**, not a flake — surface it, don't silently retry.
 
 ---
 
@@ -197,9 +270,12 @@ BASE_URL_FREEVPN          default https://freevpnplanet.com/
 BASE_URL_ACCOUNT          default https://account.freevpnplanet.com/
 BASE_URL_PERSONAL         default https://personal.freevpnplanet.com/
 BASE_URL_PLANETCONFIG     default https://planetconfig.com/
-SEED                      default 1234   (Faker determinism)
-SYNTHETIC_EMAIL_DOMAIN    default yopmail.com  (see docs/CONSTRAINTS.md §2.4)
+SEED                      default 1234         (Faker determinism)
+SYNTHETIC_EMAIL_DOMAIN    default yopmail.com  (disposable mail w/ valid MX; CONSTRAINTS §2.4)
+CI                        optional             (set by GitHub Actions; gates workers + forbidOnly)
 ```
+
+Every env var is validated by the zod schema, so a bad value fails fast at import. The factory seed module [`tests/factories/_seed.ts`](tests/factories/_seed.ts) consumes `env.SYNTHETIC_EMAIL_DOMAIN` rather than reading `process.env` directly — honouring the project's "no inline `process.env`" rule. Override it (via `.env.local` or a CI secret) when a target site requires a different disposable-mail domain.
 
 ### `tsconfig.json` path aliases
 
@@ -210,24 +286,25 @@ SYNTHETIC_EMAIL_DOMAIN    default yopmail.com  (see docs/CONSTRAINTS.md §2.4)
 @factories     -> tests/factories/index.ts
 @factories/*   -> tests/factories/*
 @infra/*       -> tests/infra/*
-@components/*, @api/*, @data/*  (reserved for future use)
 ```
 
 ### CI (`.github/workflows/tests.yml`)
 
 - **Triggers**: push to `main`, pull requests, manual dispatch.
 - **Matrix**: `chromium` × `firefox` × `webkit`, `fail-fast: false` so one browser failure doesn't mask the others.
-- **Cache**: Playwright browsers cached by `package-lock.json` hash.
-- **Lint + typecheck**: runs once (on the chromium leg).
-- **Artefacts**: HTML report (14 days) on every run, traces + videos (7 days) on failure.
-- **Concurrency**: `cancel-in-progress` per branch — pushing a new commit cancels the in-flight CI for that branch.
+- **Cache**: Playwright browsers cached, scoped per matrix project.
+- **Lint + typecheck + validate + format:check**: runs once (on the chromium leg) — the same `tools/` gates that run pre-commit.
+- **Artefacts**: HTML report + JUnit + traces/videos uploaded for inspection.
+- **SonarCloud**: a separate job waits for the tests, then feeds JUnit results into SonarCloud for the quality gate (badges at the top of this README).
+- **CI is the authoritative green signal** — see [Running & results](#running--results--read-this-before-judging-a-local-run).
 
 ### Pre-commit (`.husky/pre-commit`)
 
-- `lint-staged` (eslint + prettier on staged TS / JSON / MD).
-- `lint-ui-spec.ts` against staged spec files (only when the skill scripts are present).
+1. `lint-staged` — Prettier + `eslint --fix` on staged files.
+2. `bash tools/validate-layout.sh` — layer-boundary enforcement.
+3. `npx tsx tools/lint-ui-spec.ts` — spec anti-pattern scan (hard waits, raw `fetch`, inline page objects, …).
 
-Conventional commit format is enforced by `.husky/commit-msg` (regex on `^(feat|fix|docs|...)(scope)?: subject`).
+ESLint and Prettier run **only** through `lint-staged` here — they are not part of the post-edit AI hook (which typechecks only). Conventional commit format is enforced by `.husky/commit-msg` (regex on `^(feat|fix|docs|...)(scope)?: subject`). The full `npm run validate` (which adds factory + fixture gates) runs in CI.
 
 ---
 

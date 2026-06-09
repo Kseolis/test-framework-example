@@ -1,18 +1,10 @@
 {
   "layout": {
     "pages": "tests/pages",
-    "components": "tests/components",
-    "apiClients": "tests/api",
     "fixtures": "tests/fixtures",
     "factories": "tests/factories",
     "specs": "tests/specs",
-    "data": "tests/data",
     "infra": "tests/infra"
-  },
-  "openapi": {
-    "enabled": false,
-    "source": "specs/openapi.yaml",
-    "generated": "tests/api/generated"
   },
   "naming": {
     "pageClass": "PascalCase",
@@ -25,9 +17,7 @@
   },
   "stack": {
     "factories": "fishery",
-    "openapi": "openapi-typescript+openapi-fetch",
     "schemaValidation": "zod"
   },
-  "envs": ["local", "staging", "prod"],
   "version": 1
 }

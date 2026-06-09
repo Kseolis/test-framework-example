@@ -1,0 +1,32 @@
+{
+  "layout": {
+    "pages": "tests/pages",
+    "components": "tests/components",
+    "apiClients": "tests/api",
+    "fixtures": "tests/fixtures",
+    "factories": "tests/factories",
+    "specs": "tests/specs",
+    "data": "tests/data",
+    "infra": "tests/infra"
+  },
+  "openapi": {
+    "source": "specs/openapi.yaml",
+    "generated": "tests/api/generated"
+  },
+  "naming": {
+    "pageClass": "PascalCase",
+    "specFile": "kebab-case.spec.ts",
+    "factoryFile": "kebab-case.factory.ts"
+  },
+  "selectors": {
+    "preferred": ["getByRole", "getByLabel", "getByTestId"],
+    "testIdAttr": "data-testid"
+  },
+  "stack": {
+    "factories": "fishery",
+    "openapi": "openapi-typescript+openapi-fetch",
+    "schemaValidation": "zod"
+  },
+  "envs": ["local", "staging", "prod"],
+  "version": 1
+}
